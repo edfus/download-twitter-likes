@@ -1,0 +1,16 @@
+{
+  "name": "download-twitter-likes",
+  "version": "2.1.3",
+  "description": "none",
+  "main": "index.mjs",
+  "scripts": {
+    "d": "node index.mjs"
+  },
+  "author": "e",
+  "license": "ISC",
+  "dependencies": {
+    "ndjson": "^2.0.0",
+    "node-fetch": "^2.6.1",
+    "proxy-agent": "^4.0.0"
+  }
+}

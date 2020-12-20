@@ -1,0 +1,6 @@
+likes/
+log.txt
+.vs/
+node_modules/
+package-lock.json
+favs.ndjson
