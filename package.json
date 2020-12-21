@@ -9,8 +9,8 @@
   "author": "e",
   "license": "ISC",
   "dependencies": {
-    "ndjson": "^2.0.0",
     "node-fetch": "^2.6.1",
-    "proxy-agent": "^4.0.0"
+    "proxy-agent": "^4.0.0",
+    "split2": "^3.2.2"
   }
 }

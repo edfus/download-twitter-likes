@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 import fs    from 'fs'
-import ndjson    from 'ndjson'
+import split2    from 'split2'
 import ProxyAgent from 'proxy-agent';
 import Throttle from "./helpers.mjs"
 import PromiseStream from "./promise_stream.mjs"
@@ -48,7 +48,7 @@ console.info(`\nA complete log of this run can be found in ${log_path}`);
   }
 
   fs.createReadStream("favs.ndjson")
-    .pipe(ndjson.parse())
+    .pipe(split2(JSON.parse))
     .on('data', async fav => {
       const details = replaceReservedChars (
           [
