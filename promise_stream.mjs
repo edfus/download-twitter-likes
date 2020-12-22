@@ -40,7 +40,10 @@ class PromiseStream {
   }
 
   then (func) {
-    this._then.push(func);
+    if(this.count !== 0 && this._arr.length === this.count)
+      func(this._arr);
+    else this._then.push(func);
+
     return this;
   }
 
