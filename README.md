@@ -36,9 +36,9 @@ npm install --only=prod
 
 Node.js version equal to or higher than 10.3.0 supported. (unconfirmed tho)
 
-###### 3. put favs.ndjson in the folder directory
+###### 3. put favs.ndjson in the directory
 
-You can get the `favs.ndjson` file using my [get-twitter-likes](https://github.com/edfus/get-twitter-likes) package, or reaching to other Twitter api crawler service like [this python package](https://github.com/tekumara/twitter-likes) if you would prefer.
+You can get the `favs.ndjson` file using my [get-twitter-likes](https://github.com/edfus/get-twitter-likes) package, or reaching to other Twitter api scraper service like [this python package](https://github.com/tekumara/twitter-likes) if you would prefer.
 
 ###### 3. run
 
@@ -143,3 +143,9 @@ run `npm install proxy-agent`,
 - `agent: new ProxyAgent('http://127.0.0.1:7890')`
 
 Don't forget to modify the `http://127.0.0.1:7890` part to meet your proxy configuration!
+
+## Test validation
+
+run `npm install` to install the additional dev-dependancies.
+
+then run `npm run test` to perform a test.
