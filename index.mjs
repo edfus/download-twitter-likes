@@ -1,3 +1,4 @@
+//TODO: remove dependencies fetch and ProxyAgent
 import fetch from 'node-fetch';
 import fs    from 'fs'
 import split2    from 'split2'
@@ -10,7 +11,7 @@ const fsp = fs.promises;
 
 // config
 
-const path = "./likes/";
+const path = process.argv[2] || "./likes/";
 
 const throttleLimit = 20;
 const throttleSeconds = 10;
@@ -120,7 +121,7 @@ console.info(`\nA complete log of this run can be found in ${log_path}`);
         }
       } else write(result.reason); // rejected
 
-      return void 0; //
+      return void 0; // hijacked! just drain it.
     })
 })()
 
@@ -169,14 +170,18 @@ async function _fetch (url, name, path = "./") {
           })
           .then(response => {
             if(response.status === 200) {
-              response.body.pipe(fs.createWriteStream(path + name));
-              return {
-                name: 'Successful',
-                message: {
-                  url: url,
-                  pathname: path + name
-                }
-              };
+              return new Promise((resolve, reject) => {
+                response.body.pipe(fs.createWriteStream(path + name))
+                             .on("finish", () => resolve({
+                                  name: 'Successful',
+                                  message: {
+                                    url: url,
+                                    pathname: path + name
+                                  }
+                                })
+                              )
+                              .on("error", err => reject(err))
+              })
             } else {
               return Promise.reject({
                 name: `${response.status} ${response.statusText}`,
