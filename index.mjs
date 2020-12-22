@@ -1,30 +1,17 @@
 //TODO: remove dependencies fetch and ProxyAgent
 import fetch from 'node-fetch';
-import fs    from 'fs'
+import fs, {promises as fsp}    from 'fs'
 import split2    from 'split2'
-import ProxyAgent from 'proxy-agent';
+// import ProxyAgent from 'proxy-agent'; //NOTE: de-annotate this line if proxy required
 import Throttle from "./helpers.mjs"
 import PromiseStream from "./promise_stream.mjs"
 
-const proxyAgent = new ProxyAgent(process.env.http_proxy || 'http://127.0.0.1:7890');
-const fsp = fs.promises;
-
 // config
-
 const path = extractArg(/-{1,2}path=/i) || "./likes/";
 const ndjson_path = extractArg(/-{1,2}ndjson(_?path)?=/i) || "favs.ndjson";
 
 const throttleLimit = 20;
 const throttleSeconds = 10;
-
-const customizeDateFormat = date_obj => {
-  return date_obj
-          .toLocaleDateString()
-          .replace(/(.*?)\/(20\d{2})/, "$2-$1")
-          .replace(/-(\d+)/g, 
-              (match, p1) => p1.length > 1 ? match : "-0".concat(p1)
-            );
-};
 
 const url_filter = url => {
   return true;
@@ -33,6 +20,15 @@ const url_filter = url => {
 const pathname_filter = pathname => {
   return !fs.existsSync(pathname);
 }
+
+const customizeDateFormat = date_obj => {
+  return date_obj
+          .toLocaleDateString()
+          .replace(/(.*?)\/(20\d{2})/, "$2-$1") // Move 202x to the front (for en-us)
+          .replace(/-(\d+)/g, // replace 2020-1-1 to 2020-01-01 for win's sequences method.
+              (match, p1) => p1.length > 1 ? match : "-0".concat(p1)
+            );
+};
 
 const log_path = "./log.txt";
 const logFiltered = false;
@@ -144,7 +140,7 @@ const throttle = new Throttle(throttleLimit, throttleSeconds);
 
 let printed = false;
 
-throttle.afterReset(() => printed = false);
+throttle.afterReset(() => printed = false); // resets every ${throttleSeconds}
 
 async function _fetch (url, name, path = "./") {
   if(!url_filter(url) || !pathname_filter(path + name))
@@ -162,12 +158,12 @@ async function _fetch (url, name, path = "./") {
       console.info(`Finished ${promises.succeeded + promises.failed}/${promises.count}. ${promises.succeeded} succeeded, ${promises.failed} failed.`)
     }
     return new Promise(resolve => setTimeout(() => resolve(_fetch (url, name, path)), throttle.seconds * 1088))
-  }
+  } // throttled
   
   throttle.reached++;
 
   return fetch(url, {
-            agent: proxyAgent //NOTE: delete this line if not using a proxy
+            // agent: new ProxyAgent('http://127.0.0.1:7890') //NOTE: de-annotate this line if proxy required
           })
           .then(response => {
             if(response.status === 200) {
@@ -197,13 +193,13 @@ async function _fetch (url, name, path = "./") {
 
 function extractFileFormat (url) {
   const lastDot_i = url.lastIndexOf(".");
-  const lastQM_i = url.lastIndexOf("?");
+  const lastQM_i = url.lastIndexOf("?"); // question mark, in case urls like abc.jpg?10
   return url.substring(lastDot_i, lastQM_i === -1 ? url.length : lastQM_i);
 }
 
 function replaceReservedChars (filename) {
   return filename.replace(/<|>|:|"|\/|\\|\||\?|\*/g, "-");
-}
+} // above are reserved characters in **windows**
 
 function write (toWrite) {
   log.write(`${toWrite.name}:\n`);

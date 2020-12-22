@@ -1,20 +1,28 @@
 {
   "name": "download-twitter-likes",
-  "version": "2.1.3",
-  "description": "none",
+  "version": "2.4.3",
+  "description": "Download all media of your Twitter favorites from a ndjson file",
   "main": "index.mjs",
   "scripts": {
     "d": "node index.mjs",
     "test": "mocha"
   },
-  "author": "e",
+  "website": "https://github.com/edfus/download-twitter-likes",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/edfus/download-twitter-likes.git"
+  },
+  "bugs": {
+    "url": "https://github.com/edfus/download-twitter-likes/issues"
+  },
+  "author": "edfus",
   "license": "ISC",
   "dependencies": {
     "node-fetch": "^2.6.1",
-    "proxy-agent": "^4.0.0",
     "split2": "^3.2.2"
   },
   "devDependencies": {
-    "mocha": "^8.2.1"
+    "mocha": "^8.2.1",
+    "proxy-agent": "^4.0.0"
   }
 }
