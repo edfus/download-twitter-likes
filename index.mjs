@@ -11,7 +11,8 @@ const fsp = fs.promises;
 
 // config
 
-const path = process.argv[2] || "./likes/";
+const path = extractArg(/-{1,2}path=/i) || "./likes/";
+const ndjson_path = extractArg(/-{1,2}ndjson(_?path)?=/i) || "favs.ndjson";
 
 const throttleLimit = 20;
 const throttleSeconds = 10;
@@ -48,7 +49,7 @@ console.info(`\nA complete log of this run can be found in ${log_path}`);
     fs.mkdirSync(path)
   }
 
-  fs.createReadStream("favs.ndjson")
+  fs.createReadStream(ndjson_path)
     .pipe(split2(JSON.parse))
     .on('data', async fav => {
       const details = replaceReservedChars (
@@ -214,4 +215,14 @@ function write (toWrite) {
     : "\t".concat(toWrite.message.toString())
     );
   log.write("\n\n")
+}
+
+function extractArg (matchPattern) {
+  for(let i = 2; i < process.argv.length; i++) {
+    if(matchPattern.test(process.argv[i])) {
+      const split = process.argv[i].split(matchPattern)
+      return split[split.length - 1];
+    }
+  }
+  return false;
 }
