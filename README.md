@@ -46,7 +46,7 @@ You can get the `favs.ndjson` file using my [get-twitter-likes](https://github.c
 npm run d
 
 # passing command line arguments:
-npm run d -- --path=./likes/ --ndjson_path=./favs.ndjson
+npm run d -- --path="./likes/" --ndjson_path="./favs.ndjson"
 ```
 
 ## Personalize

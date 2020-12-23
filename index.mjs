@@ -30,7 +30,7 @@ const customizeDateFormat = date_obj => {
             );
 };
 
-const log_path = "./log.txt";
+const log_path = extractArg(/-{1,2}log(_?path)?=/i) || "./log.txt";
 const logFiltered = false;
 const logSuccessful = false;
 
