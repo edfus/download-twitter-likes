@@ -8,13 +8,13 @@
 
 ## Features
 
-- mechanisms to easily adjust and extend the functionalities.
-- each request and its result is isolated and promisified, thus easy to control.
-- with throttle.
+- Mechanisms to easily adjust and extend the functionalities.
+- Each request and its result is isolated and promisified, thus easy to control.
+- With throttle.
 
 ## Intallation
 
-###### 1. download
+##### 1. download
 
 Using git:
 
@@ -25,7 +25,7 @@ cd  download-twitter-likes
 
 ...or download manually via <https://github.com/edfus/download-twitter-likes/archive/master.zip>
 
-###### 2. install
+##### 2. install
 
 Make sure you have [Node.js](https://nodejs.org/en/) & npm installed on your machine before proceeding.
 
@@ -34,13 +34,13 @@ Make sure you have [Node.js](https://nodejs.org/en/) & npm installed on your mac
 npm install --only=prod
 ```
 
-Node.js version equal to or higher than 10.3.0 supported. (unconfirmed tho)
+Node.js version equal to or higher than 13 supported. (experimental ES6 import)
 
-###### 3. put favs.ndjson in the directory
+##### 3. put favs.ndjson in the directory
 
-You can get the `favs.ndjson` file using my [get-twitter-likes](https://github.com/edfus/get-twitter-likes) package, or reaching to other Twitter api scraper service like [this python package](https://github.com/tekumara/twitter-likes) if you would prefer.
+You can get the `favs.ndjson` file using my [get-twitter-likes](https://github.com/edfus/get-twitter-likes) script, or reaching to other Twitter api scraper service like [this python package](https://github.com/tekumara/twitter-likes) if you would prefer.
 
-###### 3. run
+##### 4. run
 
 ```bash
 npm run d
@@ -55,7 +55,7 @@ npm run d -- --path=./likes/ --ndjson_path=./favs.ndjson
 
 ##### config section
 
-###### 1. path
+##### 1. path
 
 ```js
 const path = extractArg(/-{1,2}path=/i) || "./likes/";
@@ -72,16 +72,16 @@ though using the command line arguments is a better choice:
 npm run d -- --path=somewhere --ndjson_path=itsname.ndjson
 ```
 
-###### 2. throttle
+##### 2. throttle
 
 ```js
 const throttleLimit = 20; 
 const throttleSeconds = 10;
 ```
 
-download speed is throttled to throttleLimit per throttleSeconds.
+download speed is throttled to `throttleLimit` per `throttleSeconds`.
 
-###### 3. filter
+##### 3. filter
 
 return `false` to discard things you don't want.
 
@@ -95,7 +95,7 @@ const pathname_filter = pathname => {
 }
 ```
 
-###### 4. log
+##### 4. log
 
 ```js
 const log_path = "./log.txt";
@@ -111,7 +111,7 @@ Remember to skim through the log file first if any problem was encountered.
 
 #### main section
 
-###### 5. filename
+##### 5. filename
 
 navigate to the main section, and scroll down a little, then you can see the naming logic, which looks like the snippet below.
 
