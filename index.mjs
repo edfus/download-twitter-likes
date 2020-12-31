@@ -41,7 +41,7 @@ const log = fs.createWriteStream(log_path);
 console.info(`\nA complete log of this run can be found in ${log_path}`);
 
 (async () => {
-  if(!fs.existsSync(path) || !(await fsp.stat(path)).isDirectory()) {
+  if(!fs.existsSync(path)) {
     fs.mkdirSync(path)
   }
 
@@ -73,7 +73,7 @@ console.info(`\nA complete log of this run can be found in ${log_path}`);
           )
         default:
           const dir = path.concat(details);
-          if(!fs.existsSync(dir) || !(await fsp.stat(dir)).isDirectory())
+          if (!fs.existsSync(dir))
             fs.mkdirSync(dir)
           return promises.push (
             Promise.all(fav.extended_entities.media.map((media, index) => 
