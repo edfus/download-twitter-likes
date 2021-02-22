@@ -5,6 +5,7 @@
   "main": "index.mjs",
   "scripts": {
     "d": "node index.mjs",
+    "download": "node index.mjs",
     "test": "mocha"
   },
   "website": "https://github.com/edfus/download-twitter-likes",
