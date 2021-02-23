@@ -18,13 +18,8 @@
   },
   "author": "edfus",
   "license": "ISC",
-  "dependencies": {
-    "node-fetch": "^2.6.1",
-    "split2": "^3.2.2"
-  },
   "devDependencies": {
-    "mocha": "^8.2.1",
-    "proxy-agent": "^4.0.0"
+    "@types/mocha": "^8.2.1"
   },
   "type": "module",
   "engines": {
