@@ -1,4 +1,6 @@
-import { get } from "http";
+import { get as http_get } from "http";
+import { get as https_get } from "https";
+import { fetch as proxyFetch } from "./proxy-tunnel.mjs";
 import { pipeline, Transform, Writable } from 'stream';
 import { createReadStream, createWriteStream, existsSync, promises as fsp } from 'fs';
 
@@ -6,25 +8,28 @@ import Throttle from "./helpers.mjs";
 import PromiseStream from "./promise_stream.mjs";
 
 // proxy
-const useProxy = false;
+const useProxy = true;
+const proxy = "http://127.0.0.1:7890";
 
-const fetch = (url, cb) => {
+const fetch = (() => {
   if (useProxy) {
-    return (
-      get({
-        host: "127.0.0.1",
-        path: url,
-        port: 7890,
-        protocol: "http:",
-        headers: {
-          host: url
-        }
-      }, cb)
-    );
+    console.info("Using proxy: ".concat(proxy));
+    return async url => proxyFetch(proxy, url)
   } else {
-    return get(url, cb);
+    return url => {
+      const uriObject = new URL(url);
+  
+      const get = uriObject.protocol === "https:"
+                  ? https_get
+                  : http_get
+      return new Promise((resolve, reject) => 
+        get(url)
+          .once("response", resolve)
+          .once("error", reject)
+      );
+    }
   }
-}
+})()
 
 // config
 const path = extractArg(/-{1,2}path=/i) || "./likes/";
@@ -34,20 +39,19 @@ const throttleLimit = 20;
 const throttleSeconds = 10;
 
 const log_path = extractArg(/-{1,2}log(_?path)?=/i) || "./log.txt";
-const logFiltered = true;
-const logSuccessful = true;
+const logFiltered = false;
+const logSucceeded = true;
 
 import SetDB from "./set-db.mjs";
 const dbPathname = "./media.db.csv";
 const db = new SetDB(dbPathname);
 
-(async function customInitializer () {
+const customInitializer = async () => {
   await db.loaded;
-})()
+}
 
 const url_filter = (url, messagePtr) => {
-  if(!db.has(url)) {
-    db.add(url);
+  if (!db.has(url)) {
     return true; // for creating db from ndjson files, just return false
   } else {
     messagePtr.reason = `Already exists in db (${dbPathname})`;;
@@ -57,6 +61,19 @@ const url_filter = (url, messagePtr) => {
 
 const pathname_filter = pathname => {
   return !existsSync(pathname);
+}
+
+const onsucceeded = details => {
+  db.add(details.url);
+  logSucceeded && write(details);
+}
+
+const onfiltered = details => {
+  logFiltered && write(details);
+}
+
+const onfailed = details => {
+  write(details);
 }
 
 const customizeDateFormat = date_obj => {
@@ -79,11 +96,16 @@ console.info(`\nA complete log of this run can be found in ${log_path}`);
     await fsp.mkdir(path);
   }
 
+  await customInitializer();
+
   const kSource = Symbol("source");
 
   pipeline(
     createReadStream(ndjson_path),
-    new class extends Transform { // parse ndjson
+    /**
+     * parse ndjson
+     */
+    new class extends Transform {
       constructor() {
         super({ readableObjectMode: true });
         this.separator = /\r?\n/
@@ -114,11 +136,14 @@ console.info(`\nA complete log of this run can be found in ${log_path}`);
       }
       _flush(cb) {
         const lastPart = this[kSource].concat(this.decoder.decode());
-        if(lastPart.length)
+        if (lastPart.length)
           this.push(this.process(lastPart));
         return cb();
       }
     },
+    /**
+     * download favs
+     */
     new Writable({
       objectMode: true,
       async write(fav, meaningless, next) {
@@ -160,18 +185,24 @@ console.info(`\nA complete log of this run can be found in ${log_path}`);
                       dir.concat("/")
                     )
                 )
-              ).catch(async error => { // delete the empty folder if failed
-                if (!(await fsp.readdir(dir)).length) {// if empty
-                  try { // in case rmdir_err rejects first and resulting in overwriting err
-                    fsp.rmdir(dir);
-                  } catch (rmdir_err) {
-                    console.error(rmdir_err);
-                  } finally {
+              )
+                .catch(async error => { // delete the empty folder if failed
+                  if (!(await fsp.readdir(dir)).length) {// if empty
+                    try { // in case rmdir_err rejects first and resulting in overwriting err
+                      fsp.rmdir(dir);
+                    } catch (rmdir_err) {
+                      console.error(rmdir_err);
+                    } finally {
+                      throw error; // still passing the error
+                    }
+                  } else {
                     throw error; // still passing the error
                   }
-                } else throw error; // still passing the error
-              })
-                .catch(error => next(error))
+                })
+                .catch(error => {
+                  next();
+                  throw error;
+                })
                 .then(message => {
                   next();
                   return message;
@@ -182,7 +213,7 @@ console.info(`\nA complete log of this run can be found in ${log_path}`);
     }),
     error => {
       if (error)
-        throw error;
+        debugger;//throw error;
       promises.then(results => {
         throttle.end();
         log.end("Done.", () => {
@@ -195,16 +226,17 @@ console.info(`\nA complete log of this run can be found in ${log_path}`);
 
   promises.pipe(result => {
     if (result.status === "fulfilled") {
-      switch (result.value.name) {
-        case 'Filtered': logFiltered && write(result.value);
-          break;
-        case 'Successful': logSuccessful && write(result.value);
-          break;
+      for (const details of Array.isArray(result.value) ? result.value : [result.value]) {
+        switch (details.name) {
+          case 'Filtered': return onfiltered(details);
+          case 'Succeeded': return onsucceeded(details);
+          default: debugger;
+        }
       }
-    } else write(result.reason); // rejected
-
-    return void 0; // hijacked! just drain it.
-  })
+    } else {
+      return onfailed(result.reason); // rejected
+    }
+  });
 })()
 
 // https://developer.twitter.com/en/docs/twitter-api/v1/data-dictionary/object-model/extended-entities
@@ -253,23 +285,24 @@ async function _fetch(url, name, path = "./") {
 
   throttle.reached++;
 
-  return new Promise((resolve, reject) =>
-    fetch(
-      url,
-      response =>
-        response.statusCode === 200
-          ? pipeline(
-            response,
-            createWriteStream(path + name),
-            err => err ? reject(err) : resolve({
-              name: 'Successful',
-              message: {
-                url: url,
-                pathname: path + name
-              }
-            })
+  return (
+    fetch(url).then(response =>
+      response.statusCode === 200
+        ? new Promise((resolve, reject) =>
+            pipeline(
+              response,
+              createWriteStream(path + name),
+              err => 
+                err ? reject(err) : resolve({
+                  name: 'Succeeded',
+                  message: {
+                    url: url,
+                    pathname: path + name
+                  }
+                })
+            )
           )
-          : reject({
+        : Promise.reject({
             name: `${response.statusCode} ${response.statusMessage}`,
             message: {
               url: url,
@@ -277,8 +310,18 @@ async function _fetch(url, name, path = "./") {
             }
           }) || response.resume()
       // Consume response data to free up memory
-      // https://nodejs.org/api/http.html#http_http_get_url_options_callback
-    )
+      // https://nodejs.org/api/http.html#http_http_get_url_options_callback)
+    ).catch(error => {
+      if(typeof error._details !== "object")
+        error._details = {}
+
+      Object.assign(error._details, {
+        _url: url,
+        _pathname: path + name
+      })
+
+      throw error;
+    })
   );
 }
 
@@ -293,20 +336,25 @@ function replaceReservedChars(filename) {
 } // above are reserved characters in **windows**
 
 function write(toWrite) {
-  if(toWrite.stack) {
-    log.write(toWrite.stack)
+  if (toWrite.stack) {
+    log.write(toWrite.stack);
+    log.write(expand(toWrite._details));
   } else {
     log.write(`${toWrite.name}:\n`);
-    log.write(
-      typeof toWrite.message === "object"
-        ? Object.entries(toWrite.message)
-          .map(([key, value]) => `\t${key}: ${value}`)
-          .join("\n")
-        : "\t".concat(toWrite.message.toString())
-    );
+    log.write(expand(toWrite.message));
   }
-  
+
   log.write("\n\n")
+}
+
+function expand (obj) {
+  return "\n".concat(
+    typeof obj === "object"
+      ? Object.entries(obj)
+        .map(([key, value]) => `\t${key}: ${value}`)
+        .join("\n")
+      : "\t".concat(obj.toString())
+  );
 }
 
 function extractArg(matchPattern) {

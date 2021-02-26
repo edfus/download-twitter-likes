@@ -1,4 +1,4 @@
-import { ok as assert } from "assert"
+import { ok as assert, strictEqual } from "assert"
 import { exec } from "child_process"
 import { promises as fsp, readdirSync, existsSync } from "fs"
 import { dirname, basename } from 'path';
@@ -8,7 +8,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const path = __dirname.concat("/likes/");
 
-describe("download", () => {
+xdescribe("download", () => {
   it("downloading tweets with multiple images", async () => 
     download(__dirname.concat("/favs.images.ndjson"))
   ).timeout(5000);
@@ -16,7 +16,25 @@ describe("download", () => {
   it("downloading tweets with video/animated gif", async () => 
     download(__dirname.concat("/favs.gif.ndjson"))
   ).timeout(5000);
-})
+});
+
+import { fetch } from "../proxy-tunnel.mjs";
+
+describe("proxy", () => {
+  it("https", async () => {
+    await Promise.all([
+      fetch("http://127.0.0.1:7890", "https://www.google.com")
+        .then(response => strictEqual(response.statusCode, 200))
+    ])
+  }).timeout(5000);;
+
+  it("http", async () => {
+    await Promise.all([
+      fetch("http://127.0.0.1:7890", "http://www.google.com")
+        .then(response => strictEqual(response.statusCode, 200))
+    ])
+  }).timeout(10000);;
+});
 
 async function download(ndjson_file) {
   return new Promise((resolve, reject) => {
