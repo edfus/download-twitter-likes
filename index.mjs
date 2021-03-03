@@ -125,10 +125,10 @@ console.info(`\nA complete log of this run can be found in ${log_path}`);
           return cb();
 
         // length > 1
-        parts[0] = this[kSource].concat(parts[0])
+        parts[0] = this[kSource].concat(parts[0]);
 
-        for (let i = 1; i < parts.length - 1; i++) {
-          this.push(this.process(parts[i]))
+        for (let i = 0; i < parts.length - 1; i++) {
+          this.push(this.process(parts[i]));
         }
 
         this[kSource] = parts[parts.length - 1];
