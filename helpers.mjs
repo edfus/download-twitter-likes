@@ -1,27 +1,26 @@
 class Throttle {
-  reached = 0
-
+  _queue = [];
   constructor (limit, seconds) {
-    this.limit = limit;
-    this.seconds = seconds;
-    this.start();
+    this._timer = setInterval(() => {
+      if(this._queue.length) {
+        const { resolve, reject, asyncFunc } = this._queue.shift();
+        asyncFunc().then(resolve, reject);
+      } else {
+        this._timer.unref();
+      }
+    }, seconds * 1000 / limit);
   }
 
-  start () {
-    this.end()
-    this._intervalID = setInterval(() => {
-      this.reached = 0;
-      this._intervalFuncArr.forEach(f => f());
-    }, this.seconds * 1000);
-  }
+  async exec (asyncFunc) {
+    return new Promise((resolve, reject) => {
+      this._queue.push({
+        resolve,
+        reject,
+        asyncFunc
+      });
 
-  end () {
-    clearInterval(this._intervalID);
-    this._intervalFuncArr = [];
-  }
-
-  afterReset (func) {
-    this._intervalFuncArr.push(func);
+      this._timer && this._timer.ref();
+    });
   }
 }
 
