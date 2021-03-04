@@ -8,7 +8,7 @@ import ProxyTunnel from "./proxy-tunnel.mjs";
 import PromiseStream from "./promise-stream.mjs";
 
 // proxy
-const useProxy = true;
+const useProxy = false;
 const proxy = {
   url: "http://127.0.0.1:7890",
   optional_username: "username",
@@ -237,7 +237,6 @@ console.info(`\nA complete log of this run can be found in ${log_path}`);
         proxy.tunnel.destroy();
 
       promises.then(results => {
-        throttle.end();
         log.end("Done.", () => {
           console.info("Done.");
           process.exit(0);
@@ -281,13 +280,9 @@ async function fetchMedia(source, name, path) {
 
 const throttle = new Throttle(throttleLimit, throttleSeconds);
 
-let printed = false;
-
-throttle.afterReset(() => printed = false); // resets every ${throttleSeconds}
-
 async function _fetch(url, name, path = "./") {
   const messageTemp = {};
-  if (!url_filter(url, messageTemp) || !pathname_filter(path + name, messageTemp))
+  if (!url_filter(url, messageTemp) || !pathname_filter(path + name, messageTemp)) {
     return {
       name: "Filtered",
       message: {
@@ -296,55 +291,55 @@ async function _fetch(url, name, path = "./") {
         ...messageTemp
       }
     };
-
-  if (throttle.reached >= throttle.limit) {
-    if (!printed) {
-      printed = true;
-      console.info(`Finished ${promises.succeeded + promises.failed}/${promises.count}. ${promises.succeeded} succeeded, ${promises.failed} failed.`)
-    }
-    return new Promise(resolve => setTimeout(() => resolve(_fetch.apply(this, arguments)), throttle.seconds * 1088))
-  } // throttled
-
-  throttle.reached++;
+  }
 
   return (
-    fetch(url).then(response =>
-      response.statusCode === 200
-        ? new Promise((resolve, reject) =>
-            pipeline(
-              response,
-              createWriteStream(path + name),
-              err => 
-                err ? reject(err) : resolve({
-                  name: 'Succeeded',
+    throttle.exec(async () => {
+      console.info(`Finished ${promises.succeeded + promises.failed}/${promises.count}. ${promises.succeeded} succeeded, ${promises.failed} failed.`)
+      return (
+        fetch(url).then(response => 
+          response.statusCode === 200
+            ? new Promise((resolve, reject) =>
+                pipeline(
+                  response,
+                  createWriteStream(path + name),
+                  err => 
+                    err ? reject(err) : resolve({
+                      name: 'Succeeded',
+                      message: {
+                        url: url,
+                        pathname: path + name
+                      }
+                    })
+                )
+              )
+            : (
+                response.destroy(),
+
+                Promise.reject({
+                  name: `${response.statusCode} ${response.statusMessage}`,
                   message: {
                     url: url,
                     pathname: path + name
                   }
                 })
-            )
-          )
-        : Promise.reject({
-            name: `${response.statusCode} ${response.statusMessage}`,
-            message: {
-              url: url,
-              pathname: path + name
-            }
-          }) || response.resume()
-      // Consume response data to free up memory
-      // https://nodejs.org/api/http.html#http_http_get_url_options_callback)
-    ).catch(error => {
-      if(typeof error._details !== "object")
-        error._details = {}
-
-      Object.assign(error._details, {
-        _url: url,
-        _pathname: path + name
-      })
-
-      throw error;
+              )
+          // Consume response data to free up memory
+          // https://nodejs.org/api/http.html#http_http_get_url_options_callback)
+        ).catch(error => {
+          if(typeof error._details !== "object")
+            error._details = {};
+  
+          Object.assign(error._details, {
+            _url: url,
+            _pathname: path + name
+          });
+  
+          throw error;
+        })
+      );
     })
-  );
+  );  
 }
 
 function extractFileFormat(url) {
