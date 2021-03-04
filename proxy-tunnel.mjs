@@ -5,7 +5,7 @@ import { connect as tlsConnect } from "tls";
 const http_connect = request_http;
 
 const debug = {
-  enable: true,
+  enable: process.env.NODE_DEBUG && /\bproxy\b/.test(process.env.NODE_DEBUG),
   id: {
     "http": {
       req: 0,
@@ -80,29 +80,29 @@ class ProxyTunnel {
     const request = (
       uriObject.protocol === "https:"
         ? request_https(
-          uriObject,
-          {
-            agent: this.httpsAgent,
-            headers: {
-              // "Persist": uriObject.hostname,
-              // "Connection": "keep-alive, persist",
-              ...this.defaultHeaders
+            uriObject,
+            {
+              agent: this.httpsAgent,
+              headers: {
+                // "Persist": uriObject.hostname,
+                // "Connection": "keep-alive, persist",
+                ...this.defaultHeaders
+              }
             }
-          }
-        )
+          )
         : request_http(
-          this.proxy,
-          {
-            path: uriObject.toString(),
-            agent: this.httpAgent,
-            headers: {
-              ...this.defaultHeaders,
-              Host: constructHost(uriObject),
-              ...this.proxyHeaders
-            },
-            setHost: false
-          }
-        )
+            this.proxy,
+            {
+              path: uriObject.toString(),
+              agent: this.httpAgent,
+              headers: {
+                ...this.defaultHeaders,
+                Host: constructHost(uriObject),
+                ...this.proxyHeaders
+              },
+              setHost: false
+            }
+          )
     );
 
     return new Promise((resolve, reject) => {
@@ -124,18 +124,19 @@ class ProxyTunnel {
         const id = debug.id[protocol];
         const socketName = ["socket", "tlsSocket"][Number(protocol === "https")];
         
+        const id_req = ++id.req;
         request
           .once("socket", socket => {
-            id.req++;
             if (debug.socketsMap.has(socket)) {
               console.info(
                 "\x1b[36m%s\x1b[0m", // cyan
-                `✓  ${protocol} request ${id.req} reusing ${socketName} ${debug.socketsMap.get(socket)}`
+                `✓  ${protocol} request ${id_req} reusing ${socketName} ${debug.socketsMap.get(socket)}`
               );
             } else {
-              id.tcp++;
-              debug.socketsMap.set(socket, id.tcp);
-              console.info(`-  ${protocol} request ${id.req} using new ${socketName} ${id.tcp}`);
+              const id_tcp = ++id.tcp;
+
+              debug.socketsMap.set(socket, id_tcp);
+              console.info(`-  ${protocol} request ${id_req} using new ${socketName} ${id_tcp}`);
               
               socket.once("close", errored => {
                 const log = [];
@@ -146,7 +147,7 @@ class ProxyTunnel {
                   log.push("✕  ");
                 }
 
-                log.push(`${socketName} ${id.tcp} for ${protocol} request ${id.req} closed`);
+                log.push(`${socketName} ${id_tcp} for ${protocol} request ${id_req} closed`);
 
                 if(errored) {
                   log.push("\x1b[31mWITH ERROR\x1b[0m"); // red
@@ -155,7 +156,7 @@ class ProxyTunnel {
               });
             }
           })
-          .once("close", () => console.info(`☓  ${protocol} request ${id.req} closed connection`));
+          .once("close", () => console.info(`☓  ${protocol} request ${id_req} closed connection`));
       }
     });
   }
