@@ -1,20 +1,38 @@
 import { get as http_get } from "http";
 import { get as https_get } from "https";
-import { fetch as proxyFetch } from "./proxy-tunnel.mjs";
 import { pipeline, Transform, Writable } from 'stream';
 import { createReadStream, createWriteStream, existsSync, promises as fsp } from 'fs';
 
 import Throttle from "./helpers.mjs";
-import PromiseStream from "./promise_stream.mjs";
+import ProxyTunnel from "./proxy-tunnel.mjs";
+import PromiseStream from "./promise-stream.mjs";
 
 // proxy
 const useProxy = true;
-const proxy = "http://127.0.0.1:7890";
+const proxy = {
+  url: "http://127.0.0.1:7890",
+  optional_username: "username",
+  optional_password: "password"
+}
 
 const fetch = (() => {
   if (useProxy) {
-    console.info("Using proxy: ".concat(proxy));
-    return async url => proxyFetch(proxy, url)
+    console.info("Using proxy: ".concat(proxy.url));
+
+    proxy.tunnel = new ProxyTunnel(proxy.url, {
+      "Proxy-Authorization": 
+        "Basic ".concat(
+          Buffer.from(
+            `${proxy.optional_username}":"${proxy.optional_password}`
+          ).toString("base64")
+        )
+    });
+
+    const tunnel = new WeakRef(proxy.tunnel);
+
+    process.once("beforeExit", () => tunnel && tunnel.destroy())
+
+    return proxy.tunnel.fetch.bind(proxy.tunnel);
   } else {
     return url => {
       const uriObject = new URL(url);
@@ -40,7 +58,7 @@ const throttleSeconds = 10;
 
 const log_path = extractArg(/-{1,2}log(_?path)?=/i) || "./log.txt";
 const logFiltered = false;
-const logSucceeded = true;
+const logSucceeded = false;
 
 import SetDB from "./set-db.mjs";
 const dbPathname = "./media.db.csv";
@@ -214,6 +232,10 @@ console.info(`\nA complete log of this run can be found in ${log_path}`);
     error => {
       if (error)
         debugger;//throw error;
+
+      if(useProxy)
+        proxy.tunnel.destroy();
+
       promises.then(results => {
         throttle.end();
         log.end("Done.", () => {
@@ -237,7 +259,7 @@ console.info(`\nA complete log of this run can be found in ${log_path}`);
       return onfailed(result.reason); // rejected
     }
   });
-})()
+})();
 
 // https://developer.twitter.com/en/docs/twitter-api/v1/data-dictionary/object-model/extended-entities
 async function fetchMedia(source, name, path) {
@@ -338,7 +360,7 @@ function replaceReservedChars(filename) {
 function write(toWrite) {
   if (toWrite.stack) {
     log.write(toWrite.stack);
-    log.write(expand(toWrite._details));
+    toWrite._details && log.write(expand(toWrite._details));
   } else {
     log.write(`${toWrite.name}:\n`);
     log.write(expand(toWrite.message));

@@ -19,7 +19,8 @@
   "author": "edfus",
   "license": "ISC",
   "devDependencies": {
-    "@types/mocha": "^8.2.1"
+    "@types/mocha": "^8.2.1",
+    "why-is-node-running": "^2.2.0"
   },
   "type": "module",
   "engines": {

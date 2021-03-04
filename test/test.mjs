@@ -1,6 +1,6 @@
-import { ok as assert, strictEqual } from "assert"
-import { exec } from "child_process"
-import { promises as fsp, readdirSync, existsSync } from "fs"
+import { ok as assert, strictEqual } from "assert";
+import { exec } from "child_process";
+import { promises as fsp, readdirSync, existsSync } from "fs";
 import { dirname, basename } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -8,7 +8,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const path = __dirname.concat("/likes/");
 
-xdescribe("download", () => {
+describe("download", () => {
   it("downloading tweets with multiple images", async () => 
     download(__dirname.concat("/favs.images.ndjson"))
   ).timeout(5000);
@@ -18,22 +18,35 @@ xdescribe("download", () => {
   ).timeout(5000);
 });
 
-import { fetch } from "../proxy-tunnel.mjs";
+import ProxyTunnel from "../proxy-tunnel.mjs";
+import log from "why-is-node-running";
 
 describe("proxy", () => {
+  const proxyTunnel = new ProxyTunnel("http://127.0.0.1:7890");
+  after(() => {
+    proxyTunnel.destroy();
+    setTimeout(log, 3000).unref();
+    process.stdin.on("data", data => 
+      data.toString().startsWith("log") && log()
+    ).unref();
+  })
   it("https", async () => {
     await Promise.all([
-      fetch("http://127.0.0.1:7890", "https://www.google.com")
-        .then(response => strictEqual(response.statusCode, 200))
+      proxyTunnel.fetch("https://www.google.com/generate_204")
+        .then(response => strictEqual(response.statusCode, 204)),
+      proxyTunnel.fetch("https://pbs.twimg.com/media/")
+        .then(response => strictEqual(response.statusCode, 404)),
+      proxyTunnel.fetch("https://nodejs.org")
+        .then(response => strictEqual(response.statusCode, 302))
     ])
-  }).timeout(5000);;
+  }).timeout(5000);
 
-  it("http", async () => {
-    await Promise.all([
-      fetch("http://127.0.0.1:7890", "http://www.google.com")
-        .then(response => strictEqual(response.statusCode, 200))
+  it("http", () => {
+    return Promise.all([
+      proxyTunnel.fetch("http://www.google.com/generate_204")
+        .then(response => strictEqual(response.statusCode, 204))
     ])
-  }).timeout(10000);;
+  }).timeout(5000);
 });
 
 async function download(ndjson_file) {
