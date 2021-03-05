@@ -8,9 +8,9 @@ import ProxyTunnel from "./proxy-tunnel.mjs";
 import PromiseStream from "./promise-stream.mjs";
 
 // proxy
-const useProxy = false;
+const useProxy = extractArg(/--(http[-_])?proxy/) !== false || false;
 const proxy = {
-  url: "http://127.0.0.1:7890",
+  url: extractArg(/--(http[-_])?proxy=/) || "http://127.0.0.1:7890",
   optional_username: "username",
   optional_password: "password"
 }
@@ -237,6 +237,7 @@ console.info(`\nA complete log of this run can be found in ${log_path}`);
         proxy.tunnel.destroy();
 
       promises.then(results => {
+        console.info(`Finished ${promises.succeeded + promises.failed}/${promises.count}. ${promises.succeeded} succeeded, ${promises.failed} failed.`);
         log.end("Done.", () => {
           console.info("Done.");
           process.exit(0);
