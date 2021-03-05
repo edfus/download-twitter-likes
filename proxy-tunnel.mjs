@@ -30,8 +30,7 @@ class ProxyTunnel {
     };
 
     this.httpAgent = new Agent({
-      keepAlive: true,
-      maxSockets: 5
+      keepAlive: true
     });
     this.httpsAgent = new AgentHTTPS({
       keepAlive: true
