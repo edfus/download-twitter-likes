@@ -8,9 +8,9 @@ import ProxyTunnel from "./proxy-tunnel.mjs";
 import PromiseStream from "./promise-stream.mjs";
 
 // proxy
-const useProxy = extractArg(/--(http[-_])?proxy/) !== false || false;
+const useProxy = extractArg(/--(https?[-_])?proxy/) !== false;
 const proxy = {
-  url: extractArg(/--(http[-_])?proxy=/) || "http://127.0.0.1:7890",
+  url: extractArg(/--(https?[-_])?proxy=/) || "http://127.0.0.1:7890",
   optional_username: "username",
   optional_password: "password"
 }
