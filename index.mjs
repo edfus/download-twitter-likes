@@ -1,8 +1,10 @@
-import { get as http_get } from "http";
-import { get as https_get } from "https";
+import { join } from "path";
 import { pipeline, Transform, Writable } from 'stream';
+import { Agent as HTTPAgent, get as http_get } from "http";
+import { get as https_get, Agent as HTTPSAgent } from "https";
 import { createReadStream, createWriteStream, existsSync, promises as fsp } from 'fs';
 
+import SetDB from "./set-db.mjs";
 import Throttle from "./helpers.mjs";
 import ProxyTunnel from "./proxy-tunnel.mjs";
 import PromiseStream from "./promise-stream.mjs";
@@ -34,6 +36,9 @@ const fetch = (() => {
 
     return proxy.tunnel.fetch.bind(proxy.tunnel);
   } else {
+    const httpAgent = new HTTPAgent({keepAlive: true});
+    const httpsAgent = new HTTPSAgent({keepAlive: true});
+
     return url => {
       const uriObject = new URL(url);
   
@@ -41,27 +46,35 @@ const fetch = (() => {
                   ? https_get
                   : http_get
       return new Promise((resolve, reject) => 
-        get(url)
+        get(
+          url, 
+          { 
+            agent: uriObject.protocol === "https:"
+                    ? httpsAgent
+                    : httpAgent
+          }
+        )
           .once("response", resolve)
           .once("error", reject)
       );
     }
   }
-})()
+})();
+
+const path = extractArg(/-{1,2}path=/i) || "./";
 
 // config
-const path = extractArg(/-{1,2}path=/i) || "./likes/";
-const ndjson_path = extractArg(/-{1,2}ndjson(_?path)?=/i) || "favs.ndjson";
+const output_path = join(path, extractArg(/-{1,2}folder([-_]?name)?=/i) || "./likes/");
+const ndjson_path = join(path, "favs.ndjson");
 
-const throttleLimit = 20;
+const throttleLimit = 100;
 const throttleSeconds = 10;
 
-const log_path = extractArg(/-{1,2}log(_?path)?=/i) || "./log.txt";
+const log_path = join(path, "./media.log.txt");
 const logFiltered = false;
 const logSucceeded = false;
 
-import SetDB from "./set-db.mjs";
-const dbPathname = "./media.db.csv";
+const dbPathname = join(path, "./media.db.csv");
 const db = new SetDB(dbPathname);
 
 const customInitializer = async () => {
@@ -110,8 +123,8 @@ const log = createWriteStream(log_path);
 console.info(`\nA complete log of this run can be found in ${log_path}`);
 
 (async () => {
-  if (!existsSync(path)) {
-    await fsp.mkdir(path);
+  if (!existsSync(output_path)) {
+    await fsp.mkdir(output_path);
   }
 
   await customInitializer();
@@ -185,12 +198,12 @@ console.info(`\nA complete log of this run can be found in ${log_path}`);
               fetchMedia(
                 fav.extended_entities.media[0],
                 details,
-                path
+                output_path
               )
             );
             return next();
           default:
-            const dir = path.concat(details);
+            const dir = output_path.concat(details);
             if (!existsSync(dir))
               await fsp.mkdir(dir);
             return promises.push(
