@@ -61,18 +61,18 @@ const fetch = (() => {
   }
 })();
 
-const path = extractArg(/-{1,2}path=/i) || "./";
+const path = extractArg(/--path=/i) || "./";
 
 // config
-const output_path = join(path, extractArg(/-{1,2}folder([-_]?name)?=/i) || "./likes/");
-const ndjson_path = join(path, "favs.ndjson");
+const output_path = extractArg(/--output([-_]?folder)?=/i) || join(path, "./likes/");
+const ndjson_path = extractArg(/--ndjson[-_]path=/i) || join(path, "favs.ndjson");
 
 const throttleLimit = 100;
 const throttleSeconds = 10;
 
 const log_path = join(path, "./media.log.txt");
-const logFiltered = false;
-const logSucceeded = false;
+const logFiltered = extractArg(/--log[-_]filtered=/i) !== false;
+const logSucceeded = extractArg(/--log[-_]succeeded=/i) !== false;
 
 const dbPathname = join(path, "./media.db.csv");
 const db = new SetDB(dbPathname);
@@ -116,7 +116,9 @@ const customizeDateFormat = date_obj => {
     );
 };
 
-// main
+/**
+ * main
+ */
 const promises = new PromiseStream();
 const log = createWriteStream(log_path);
 
@@ -358,7 +360,7 @@ async function _fetch(url, name, path = "./") {
 
 function extractFileFormat(url) {
   const lastDot_i = url.lastIndexOf(".");
-  const lastQM_i = url.lastIndexOf("?"); // question mark, in case urls like abc.jpg?10
+  const lastQM_i = url.lastIndexOf("?"); // question mark, in case sth like abc.jpg?10
   return url.substring(lastDot_i, lastQM_i === -1 ? url.length : lastQM_i);
 }
 
