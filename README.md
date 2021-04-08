@@ -1,10 +1,6 @@
 # Dowload-twitter-likes
 
-**A lightweight Node.js package to fetch all media of your Twitter favorites**
-
 *(Tweets sources in .ndjson required)*
-
----
 
 ## Features
 
@@ -17,7 +13,7 @@
 
 ## Intallation
 
-##### 1. download
+##### 1. Download
 
 Using git:
 
@@ -26,9 +22,9 @@ git clone --depth 1 https://github.com/edfus/download-twitter-likes
 cd  download-twitter-likes
 ```
 
-...or download manually via <https://github.com/edfus/download-twitter-likes/archive/master.zip>
+...Or download manually via <https://github.com/edfus/download-twitter-likes/archive/master.zip>
 
-##### 2. install
+##### 2. Install
 
 Make sure you have [Node.js](https://nodejs.org/en/) & npm installed on your machine before proceeding.
 
@@ -39,11 +35,11 @@ npm install --only=production
 
 Node.js version equal to or higher than 13 supported. (experimental ES6 import)
 
-##### 3. put favs.ndjson in the directory
+##### 3. Put favs.ndjson in the directory
 
 You can get the `favs.ndjson` file using my [get-twitter-likes](https://github.com/edfus/get-twitter-likes) script, or reaching to other Twitter api scraper like [this python package](https://github.com/tekumara/twitter-likes) if you would prefer.
 
-## Execute
+## Usage
 
 ```bash
 npm run download
@@ -72,19 +68,19 @@ Remember to skim through the log file first if any problem was encountered.
 
 ## Personalize
 
-### Default behaviors
+**Default behaviors**:
 
 - Making 10 requests per seconds.
 - Add all successfully downloaded media's url to database.
 - If a media's url already exists in database, that media got filtered.
-- If files having the same name exist in output folder, according download got filtered.
+- If files having the same name exist in output folder, discard according download.
 - If a Tweet has multiple media, group them in a folder.
-- Delete the empty folder if failed for multi-media Tweets.
+- Delete the empty folder when download failed for multi-media Tweets.
 - For animated_gif/video, download the variant with maximum bitrate.
-- For photos, fetch them over HTTP to be faster.
+- For photos, fetch them over HTTP to get faster.
 
 - Initializer: await database loaded.
-- Log details when faileds, will not log filtered/succeeded.
+- Only log failing downloads's details, being slient on filtered/succeeded.
 
 - Filename:
 
