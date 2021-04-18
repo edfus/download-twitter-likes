@@ -8,6 +8,7 @@
 - Built-in proxy support.
 - Proper network error handling & logging.
 - Reusing tcp connection with keep-alive agents.
+- Consuming metadata in streaming fasion, low RAM usage.
 - Mechanisms for adjusting and extending the functionalities easily.
 - Each request and its result is isolated and promisified, thus easy to control.
 
@@ -71,43 +72,58 @@ Remember to skim through the log file first if any problem was encountered.
 **Default behaviors**:
 
 - Making 10 requests per seconds.
+
+<br>
+
 - Add all successfully downloaded media's url to database.
 - If a media's url already exists in database, that media got filtered.
-- If files having the same name exist in output folder, discard according download.
-- If a Tweet has multiple media, group them in a folder.
-- Delete the empty folder when download failed for multi-media Tweets.
-- For animated_gif/video, download the variant with maximum bitrate.
-- For photos, fetch them over HTTP to get faster.
+- If a dirent with the same name exist in output folder, discard according download.
 
-- Initializer: await database loaded.
-- Only log failing downloads's details, being slient on filtered/succeeded.
+<br>
+
+- If a Tweet has multiple media, group them in a folder.
+- Delete the empty folders when download failed for multi-media Tweets.
+
+<br>
+
+- For animated_gif/video, download the variant with maximum bitrate.
+- For photos, fetch them over HTTP to be faster.
+
+<br>
+
+- `customInitializer`: await database loaded.
+- Log failing downloads's details, being slient on filtered/succeeded.
+
+<br>
 
 - Filename:
 
-In index.mjs, navigate to the main section - download favs, and scroll down a little, then you can see the naming logic, which looks like the snippet below.
+In index.mjs, navigate to `main` section -> `download favs`, and scroll down a little, then you can see the naming logic, which looks like the snippet below.
 
 ```js
-const details = replaceReservedChars (
-          [
-            customizeDateFormat(new Date(fav.created_at)),
-            fav.user.name.concat("@").concat(fav.user.screen_name),
-            fav.id_str 
-          ]
-            .join("_")
-            .concat(fav.retweeted ? "--retweeted" : "")
-        );
+const details = replaceReservedChars(
+  [
+    customizeDateFormat(new Date(fav.created_at)),
+    fav.user.name.concat("@").concat(fav.user.screen_name),
+    fav.id_str 
+  ]
+    .join("_")
+    .concat(fav.retweeted ? "--retweeted" : "")
+);
 ```
 
 That will produce names like `2020-12-22_暦@koyomiyoko_o_1341064343962587136`.
 
-Notably, the `2020-12-22` was a product of the function customizeDateFormat in config section above, converting en-us time format `12/22/2020` to `2020-12-22`. It may not work properly on your machine under a different time format.
+Notably, the `2020-12-22` was a product of function `customizeDateFormat` in `config`section above, converting en-us time format `12/22/2020` to `2020-12-22`. It may not work properly on your machine under a different time format.
 
 Take a look at [Twitter's official guidance](https://developer.twitter.com/en/docs/twitter-api/v1/data-dictionary/object-model/extended-entities) or [favs-example.ndjson](https://github.com/edfus/download-twitter-likes/blob/master/favs-example.ndjson) for reference about things you can access for DIY file naming.
 
 ## Interacting with get-twitter-likes
 
+<https://github.com/edfus/get-twitter-likes>
+
 ```bash
-#! /bin/bash
+#!/bin/bash
 
 # Absolute path this script is in
 __dirname=$(dirname "$(readlink -f "$0")")
@@ -121,5 +137,5 @@ npm run g -- --smart-exit --output=${__dirname}/ ${proxy}
 cd ${path}/download-twitter-likes
 npm run d -- --path=${__dirname}/ --output-folder=${__dirname}/Raw/ ${proxy}
 
-read -p $'\n'
+read -p 'Press any key to exit...'
 ```
