@@ -34,7 +34,7 @@ Make sure you have [Node.js](https://nodejs.org/en/) & npm installed on your mac
 npm install --only=production
 ```
 
-Node.js version equal to or higher than 13 supported. (experimental ES6 import)
+Node.js versions equal to or higher than 14.6.0 are supported. (ES6 import, WeakRef)
 
 ##### 3. Put favs.ndjson in the directory
 
@@ -98,7 +98,7 @@ Remember to skim through the log file first if any problem was encountered.
 
 - Filename:
 
-In index.mjs, navigate to `main` section -> `download favs`, and scroll down a little, then you can see the naming logic, which looks like the snippet below.
+In `index.mjs`, navigate to the `main` section, locate the `download favs` annotation that serves as a thematic break, and scroll down a little bit, the naming logic is here:
 
 ```js
 const details = replaceReservedChars(
@@ -129,13 +129,13 @@ Take a look at [Twitter's official guidance](https://developer.twitter.com/en/do
 __dirname=$(dirname "$(readlink -f "$0")")
 
 readonly path=/y/scripts-node/_internal
-readonly proxy="--proxy=http://127.0.0.1:7890"
+readonly proxy='--proxy=http://127.0.0.1:7890'
 
-cd ${path}/get-twitter-likes
-npm run g -- --smart-exit --output=${__dirname}/ ${proxy}
+cd "${path}/get-twitter-likes"
+npm run g -- --smart-exit --output="${__dirname}/" "${proxy}"
 
-cd ${path}/download-twitter-likes
-npm run d -- --path=${__dirname}/ --output-folder=${__dirname}/Raw/ ${proxy}
+cd "${path}/download-twitter-likes"
+npm run d -- "--path=${__dirname}/" "--output-folder=${__dirname}/Raw/" "${proxy}"
 
 read -p 'Press any key to exit...'
 ```

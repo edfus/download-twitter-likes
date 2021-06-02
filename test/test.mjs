@@ -56,7 +56,7 @@ async function download(ndjson_file) {
       if(err) reject(err)
       else {
         assert(existsSync(outputDir) && (await fsp.readdir(outputDir)).length);
-        resolve(await dirAll(outputDir, name => console.log("\t".concat(name))));
+        resolve(await dirAll(outputDir, name => console.info("\t".concat(name))));
       }
     })
   })
