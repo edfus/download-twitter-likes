@@ -32,7 +32,7 @@ const fetch = (() => {
 
     const tunnel = new WeakRef(proxy.tunnel);
 
-    process.once("beforeExit", () => tunnel && tunnel.destroy())
+    process.once("beforeExit", () => tunnel.deref()?.destroy?.());
 
     return proxy.tunnel.fetch.bind(proxy.tunnel);
   } else {
